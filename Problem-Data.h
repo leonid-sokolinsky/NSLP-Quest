@@ -5,11 +5,8 @@ Module: Problem-Data.h (Problem Data)
 Author(s): Leonid B. Sokolinsky, Irina M. Sokolinskaya
 This source code has been produced with using BSF-skeleton
 ==============================================================================*/
-#pragma once
-#include "Problem-Parameters.h"		// Problem Parameters 
-
+#include "Problem-Types.h"		// Problem Parameters 
 //========================== Problem variables ====================================
-static int PD_iterCounter = 0;	// Counter of Iterations
 
 //========================== Problem structures ====================================
 static float PD_normSquare_a[PP_M];

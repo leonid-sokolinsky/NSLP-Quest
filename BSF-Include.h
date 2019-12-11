@@ -1,15 +1,12 @@
 /*==============================================================================
 Project: Bulk Synchronous Farm (BSF)
-Theme: BSF-MRA Skeleton
-Module: BSF-Include.h ("Includ" Files for BSF-MRA Skeleton)
-Author(s): Leonid B. Sokolinsky
-This source code belonges to the BSF-skeleton
+Theme: BSF Skeleton
+Module: BSF-Include.h (Problem Independent "Include" Files)
+Author: Leonid B. Sokolinsky 
+
+This source code is a part of BSF Skeleton
 ==============================================================================*/
-#pragma once
-#include <mpi.h>
-#include <assert.h>
 #include <iomanip>
 #include <iostream>
+#include <mpi.h>
 #include <omp.h>
-#include <stdlib.h>
-#include <string.h>
