@@ -7,9 +7,10 @@ This source code has been produced with using BSF-skeleton
 ==============================================================================*/
 #include "Problem-Types.h"		// Problem Parameters 
 //========================== Problem variables ====================================
+static float* PD_shift;
+static float* PD_approximation;
 
 //========================== Problem structures ====================================
-static float PD_normSquare_a[PP_M];
 
 /*------------ Way_b pararters (Fourier series) ---------------*/
 static float* PD_direction;			// Amplitudes

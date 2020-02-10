@@ -9,12 +9,13 @@ This source code has been produced with using BSF-skeleton
 #include "Problem-bsfParameters.h"	// Predefined Problem Parameters
 #include "Problem-Data.h"			// Problem Types 
 #include "Problem-Forwards.h"		// Problem Function Forwards
+#include "BSF-VariableAccess.h"
 using namespace std;
 
-void PC_bsf_SetInitData(PT_bsf_data_T* data) {
+void PC_bsf_SetInitParameter(PT_bsf_parameter_T* parameter) {
 	for (int j = 0; j < PP_N; j++) // Generating coordinates of initial appriximation
-		data->approximation[j] = PP_INIT_APPROX;
-//	data->approximation[0] = PP_INIT_APPROX;
+		parameter->approximation[j] = PP_INIT_APPROX;
+//	parameter->approximation[0] = PP_INIT_APPROX;
 };
 
 void PC_bsf_Init(bool* success) {
@@ -34,10 +35,10 @@ void PC_bsf_AssignListSize(int* listSize) {
 	*listSize = PP_M;
 };
 
-void PC_bsf_CopyData(PT_bsf_data_T* dataIn, PT_bsf_data_T* dataOut) {
+void PC_bsf_CopyParameter(PT_bsf_parameter_T* parameterIn, PT_bsf_parameter_T* parameterOut) {
 	for (int j = 0; j < PP_N; j++) {
-		dataOut->approximation[j] = dataIn->approximation[j];
-		dataOut->shift[j] = dataIn->shift[j];
+		parameterOut->approximation[j] = parameterIn->approximation[j];
+		parameterOut->shift[j] = parameterIn->shift[j];
 	};
 };
 
@@ -70,15 +71,19 @@ void PC_bsf_SetMapSubList(PT_bsf_mapElem_T* sublist, int sublistLength, int offs
 		sublist[i - offset].inequality[i - PP_N - 2] = -1;
 };
 
-void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, PT_bsf_data_T* data, int noInSublist, int sublistLength,
-	int offset, int* success // 1 - reduceElem was produced successfully; 0 - otherwise
+void PC_bsf_SetParameter(PT_bsf_parameter_T* parameter) {
+	PD_shift = parameter->shift;
+	PD_approximation = parameter->approximation;
+};
+
+void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, int* success // 1 - reduceElem was produced successfully; 0 - otherwise
 ){
 	float factor;
 	float wayed_b;
 
-	wayed_b = Way_b(mapElem->inequality, data->shift);
+	wayed_b = Way_b(mapElem->inequality, PD_shift);
 
-	factor = PF_MIN(wayed_b - DotProduct(data->approximation, mapElem->inequality), 0) / NormSquare(mapElem->inequality);
+	factor = PF_MIN(wayed_b - DotProduct(PD_approximation, mapElem->inequality), 0) / NormSquare(mapElem->inequality);
 
 	if (factor == 0)
 		*success = 0;
@@ -86,9 +91,21 @@ void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, PT_
 	for (int j = 0; j < PP_N; j++)
 		reduceElem->point[j] = factor * mapElem->inequality[j];
 
-	reduceElem->pointIn = PointIn(data->approximation, mapElem->inequality, wayed_b);
+	reduceElem->pointIn = PointIn(PD_approximation, mapElem->inequality, wayed_b);
 
 	//*debug*/cout << "PC_bsf_MapF: pointIn=" << reduceElem->pointIn << endl;
+};
+
+void PC_bsf_MapF_1(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T_1* reduceElem,
+	int* success // 1 - reduceElem was produced successfully (default); 0 - otherwise
+) {
+	/* not used */
+};
+
+void PC_bsf_MapF_2(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T_2* reduceElem,
+	int* success // 1 - reduceElem was produced successfully (default); 0 - otherwise
+) {
+	/* not used */
 };
 
 void PC_bsf_ReduceF(PT_bsf_reduceElem_T* x, PT_bsf_reduceElem_T* y, PT_bsf_reduceElem_T* z) { // z = x + y
@@ -96,18 +113,20 @@ void PC_bsf_ReduceF(PT_bsf_reduceElem_T* x, PT_bsf_reduceElem_T* y, PT_bsf_reduc
 		z->point[j] = x->point[j] + y->point[j];
 	z->pointIn = x->pointIn && y->pointIn;
 };
+void PC_bsf_ReduceF_1(PT_bsf_reduceElem_T_1* x, PT_bsf_reduceElem_T_1* y, PT_bsf_reduceElem_T_1* z) {/* not used */};
+void PC_bsf_ReduceF_2(PT_bsf_reduceElem_T_2* x, PT_bsf_reduceElem_T_2* y, PT_bsf_reduceElem_T_2* z) {/* not used */};
 
 void PC_bsf_ProcessResults(
 	bool* exit, // "true" if Stopping Criterion is satisfied, and "false" otherwise
 	PT_bsf_reduceElem_T* reduceResult,
 	int reduceCounter, // Number of successfully produced Elrments of Reduce List
-	PT_bsf_data_T* data, // Current Approximation
-	int iterCounter	// Iteration Counter
+	PT_bsf_parameter_T* parameter, // Current Approximation
+	int* jobCase
 ) {
-	for (int j = 0; j < PP_N; j++) PD_previousShift[j] = data->shift[j];
-	GetShift(data->shift);
+	for (int j = 0; j < PP_N; j++) PD_previousShift[j] = parameter->shift[j];
+	GetShift(parameter->shift);
 	//*debug*/cout << "PC_bsf_ProcessResults: pointIn=" << reduceResult->pointIn << endl;
-	if (ExitCondition(reduceResult, reduceCounter, data, iterCounter))
+	if (ExitCondition(reduceResult, reduceCounter, parameter))
 		*exit = true;
 	else {
 		*exit = false;
@@ -119,13 +138,33 @@ void PC_bsf_ProcessResults(
 		norm = sqrtf(norm);
 
 		for (int j = 0; j < PP_N; j++)
-			data->approximation[j] += (float)(PP_LAMBDA * reduceResult->point[j] / norm);
-			//data->approximation[j] += (float)(PP_LAMBDA * reduceResult->point[j] / reduceCounter);
+			parameter->approximation[j] += (float)(PP_LAMBDA * reduceResult->point[j] / norm);
+			//parameter->approximation[j] += (float)(PP_LAMBDA * reduceResult->point[j] / reduceCounter);
 	};
 	//cout << "Number of successfully produced Elrments of Reduce List: " << reduceCounter << endl;
 };
 
-void PC_bsf_ParametersOutput(int numOfWorkers, PT_bsf_data_T data) {
+void PC_bsf_ProcessResults_1(
+	bool* exit, // "true" if Stopping Criterion is satisfied, and "false" otherwise
+	PT_bsf_reduceElem_T_1* reduceResult,
+	int reduceCounter, // Number of successfully produced Elrments of Reduce List
+	PT_bsf_parameter_T* parameter, // Current Approximation
+	int* jobCase
+) {
+	// optional filling
+};
+
+void PC_bsf_ProcessResults_2(
+	bool* exit, // "true" if Stopping Criterion is satisfied, and "false" otherwise
+	PT_bsf_reduceElem_T_2* reduceResult,
+	int reduceCounter, // Number of successfully produced Elrments of Reduce List
+	PT_bsf_parameter_T* parameter, // Current Approximation
+	int* jobCase
+) {
+	// optional filling
+};
+
+void PC_bsf_ParametersOutput(int numOfWorkers, PT_bsf_parameter_T parameter) {
 	cout << "=================================================== Quest Modified Fejer ====================================================" << endl;
 	cout << "Number of Workers: " << numOfWorkers << endl;
 	cout << "Velosity: " << PP_VELOCITY << endl;
@@ -171,32 +210,56 @@ void PC_bsf_ParametersOutput(int numOfWorkers, PT_bsf_data_T data) {
 		cout << setw(5) << 0 << endl;
 	};
 #endif // PP_MATRIX_OUTPUT
-	cout << "Start Point: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(7) << data.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
+	cout << "Start Point: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(7) << parameter.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
 	cout << "Direction: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(7) << PD_direction[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
 	cout << "-------------------------------------------" << endl;
 };
 
-void PC_bsf_IterOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_data_T data,
-	int iterCounter, double elapsedTime) {
-	cout << "-------------------- " << iterCounter << " -------------------" << endl;
+void PC_bsf_IterOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
+	double elapsedTime, int newJobCase) {
+	cout << "-------------------- " << PP_BSF_iterCounter << " -------------------" << endl;
 	//cout << "Reduce Result:"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(10) << reduceResult->point [j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
-	cout << "Shift:\t\t\t"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << data.shift[j]; cout << (PP_OUTPUT_LIMIT < PP_N - 1 ? "..." : "") << endl;/**/
-	cout << "Approximation:\t\t"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << data.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
-	cout << "Shift - Approximation :\t"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << data.shift[j] - data.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
+	cout << "Shift:\t\t\t"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.shift[j]; cout << (PP_OUTPUT_LIMIT < PP_N - 1 ? "..." : "") << endl;/**/
+	cout << "Approximation:\t\t"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
+	cout << "Shift - Approximation :\t"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.shift[j] - parameter.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
 	cout << "PointIn = " << setw(1) << reduceResult->pointIn << endl;
 };
 
-void PC_bsf_ProblemOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_data_T data,
-	int iterCounter, double t) {// Output Function
+void PC_bsf_IterOutput_1(PT_bsf_reduceElem_T_1* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
+	double elapsedTime, int newJobCase)
+{
+	cout << "------------------ " << PP_BSF_iterCounter << " ------------------" << endl;
+	/* not used */
+};
+
+void PC_bsf_IterOutput_2(PT_bsf_reduceElem_T_2* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
+	double elapsedTime, int newJobCase)
+{
+	cout << "------------------ " << PP_BSF_iterCounter << " ------------------" << endl;
+	/* not used */
+};
+
+void PC_bsf_ProblemOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
+	double t) {// Output Function
 	cout << "=============================================" << endl;
 	cout << "Time: " << t << endl;
-	cout << "Iterations: " << iterCounter << endl;
-	cout << "Solution: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << data.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
-	cout << "Solution without Shift: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << data.approximation[j] - PD_previousShift[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
+	cout << "Iterations: " << PP_BSF_iterCounter << endl;
+	cout << "Solution: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.approximation[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
+	cout << "Solution without Shift: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.approximation[j] - PD_previousShift[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
 	/*float coordinate_sum = 0;
 	for (int j = 0; j < PP_N; j++) 
-		coordinate_sum += data.approximation[j] - PD_previousShift[j];
+		coordinate_sum += parameter.approximation[j] - PD_previousShift[j];
 	cout << "Sum of coordindtes: " << coordinate_sum << endl;/**/
+};
+
+void PC_bsf_ProblemOutput_1(PT_bsf_reduceElem_T_1* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
+	double t) {// Output Function
+	// optional filling
+};
+
+void PC_bsf_ProblemOutput_2(PT_bsf_reduceElem_T_2* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
+	double t) {// Output Function
+	// optional filling
 };
 
 //----------------------------- User functions -----------------------------
@@ -254,7 +317,7 @@ static float Way_b(PT_inequality_T inequality, PT_shift_T shift) {
 	return sum;
 };
 
-static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_data_T* data, int iterCounter) {
+static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T* parameter) {
 	static float shift_approx_prev = FLT_MAX, shift_approx_next;
 
 	if (reduceResult->pointIn) {
@@ -262,8 +325,8 @@ static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, 
 		return true;
 	};
 
-	shift_approx_next = data->shift[0] - data->approximation[0];
-	if (iterCounter > 100)
+	shift_approx_next = parameter->shift[0] - parameter->approximation[0];
+	if (PP_BSF_iterCounter > 100)
 		if (shift_approx_prev + PP_EPS_LAG < shift_approx_next) {
 			cout << ">>>>>>>>>>>>>>>>> Process began to lag!!! <<<<<<<<<<<<<<<<<<<<<<" << endl;
 			cout << "shift_approx_next - shift_approx_prev = " << shift_approx_next - shift_approx_prev << endl;
@@ -272,7 +335,7 @@ static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, 
 	shift_approx_prev = shift_approx_next;
 
 #ifdef PP_MAX_ITER_COUNT
-	if (iterCounter > PP_MAX_ITER_COUNT) {
+	if (PP_BSF_iterCounter > PP_MAX_ITER_COUNT) {
 		cout << "Acceptable maximum number of iterations is exceeded: PP_MAX_ITER_COUNT = " << PP_MAX_ITER_COUNT << endl;
 		return true;
 	};

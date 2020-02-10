@@ -6,7 +6,7 @@ Author: Leonid B. Sokolinsky
 
 This source code is a part of BSF Skeleton
 ==============================================================================*/
+#include <mpi.h>
 #include <iomanip>
 #include <iostream>
-#include <mpi.h>
 #include <omp.h>
