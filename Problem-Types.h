@@ -10,6 +10,5 @@ This source code has been produced with using BSF-skeleton
 #include "Problem-Include.h"		// Problem "Include" Files
 #include "Problem-Parameters.h"		// Problem Parameters 
 //=========================== Problem Types =========================
-typedef float PT_point_T[PP_N];			// Point in n-Dimensional Space 
-typedef float PT_shift_T[PP_N];	// Shift (non-stationarity)
-typedef float PT_inequality_T[PP_N + 1];		// Inequality: inequality[0]*x_1+...+inequality[n-1]*x_n <= inequality[n]
+typedef double PT_point_T[PP_N];			// Point in n-Dimensional Space 
+typedef double PT_inequality_T[PP_N + 1];		// Inequality: inequality[0]*x_1+...+inequality[n-1]*x_n <= inequality[n]
