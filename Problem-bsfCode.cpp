@@ -8,16 +8,8 @@ This source code has been produced with using BSF-skeleton
 ==============================================================================*/
 #include "Problem-Data.h"			// Problem Types 
 #include "Problem-Forwards.h"		// Problem Function Forwards
+#include "BSF-SkeletonVariables.h"	// Skeleton Variables
 using namespace std;
-
-//----------------------- Access to BSF-skeleton parameters  -----------------
-void PC_bsf_AssignAddressOffset(int value) { PP_BSF_addressOffset = value; };
-void PC_bsf_AssignIterCounter(int value) { PP_BSF_iterCounter = value; };
-void PC_bsf_AssignJobCase(int value) { PP_BSF_jobCase = value; };
-void PC_bsf_AssignMpiRank(int value) { PP_BSF_mpiRank = value; };
-void PC_bsf_AssignNumberInSublist(int value) { PP_BSF_numberInSublist = value; };
-void PC_bsf_AssignNumOfWorkers(int value) { PP_BSF_numOfWorkers = value; };
-void PC_bsf_AssignSublistLength(int value) { PP_BSF_sublistLength = value; };
 
 void PC_bsf_SetInitParameter(PT_bsf_parameter_T* parameter) {
 	for (int j = 0; j < PP_N; j++) // Generating initial approximation
@@ -71,31 +63,21 @@ void PC_bsf_Init(bool* success) {
 
 };
 
-void PC_bsf_AssignListSize(int* listSize) {
+void PC_bsf_SetListSize(int* listSize) {
 	*listSize = PP_M;
 };
 
-void PC_bsf_CopyParameter(PT_bsf_parameter_T* parameterIn, PT_bsf_parameter_T* parameterOut) {
-	for (int j = 0; j < PP_N; j++) {
-		parameterOut->x[j] = parameterIn->x[j];
-	};
-};
-
-void PC_bsf_SetMapSubList(PT_bsf_mapElem_T* sublist, int sublistLength, int offset, bool* success) {
+void PC_bsf_SetMapSubList(PT_bsf_mapElem_T* sublist, int sublistLength, int offset) {
 	//*debug*/int rank; MPI_Comm_rank(MPI_COMM_WORLD, &rank); cout << rank << ":=========>PC_bsf_SetMapSubList: sublistLength = " << sublistLength << "\toffset = " << offset << endl; cout.flush();
 	for (int i = 0; i < sublistLength; i++)
 			sublist[i].inequalityNo = offset + i;
-};
-
-void PC_bsf_SetParameter(PT_bsf_parameter_T* parameter) {
-		PD_x_P = parameter->x;
 };
 
 void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, int* success // 1 - reduceElem was produced successfully; 0 - otherwise
 ){
 	double factor;
 
-	factor = (PD_b[mapElem->inequalityNo] - DotProduct(PD_x_P, PD_A[mapElem->inequalityNo])) / PD_normSquare_a[mapElem->inequalityNo];
+	factor = (PD_b[mapElem->inequalityNo] - DotProduct(BSF_sv_parameter.x, PD_A[mapElem->inequalityNo])) / PD_normSquare_a[mapElem->inequalityNo];
 
 	if (factor > 0)
 		*success = false;
@@ -144,14 +126,12 @@ void PC_bsf_ReduceF_2(PT_bsf_reduceElem_T_2* x, PT_bsf_reduceElem_T_2* y, PT_bsf
 void PC_bsf_ReduceF_3(PT_bsf_reduceElem_T_3* x, PT_bsf_reduceElem_T_3* y, PT_bsf_reduceElem_T_3* z) {/* not used */ }
 
 void PC_bsf_ProcessResults(
-	bool* exit, // "true" if Stopping Criterion is satisfied, and "false" otherwise
 	PT_bsf_reduceElem_T* reduceResult,
 	int reduceCounter, // Number of successfully produced Elrments of Reduce List
 	PT_bsf_parameter_T* parameter, // Current Approximation
-	int* jobCase
+	int* nextJob,
+	bool* exit // "true" if Stopping Criterion is satisfied, and "false" otherwise
 ) {
-	*jobCase = 0;
-
 	if (ExitCondition(reduceResult, reduceCounter, parameter))
 		*exit = true;
 	else {
@@ -171,45 +151,45 @@ void PC_bsf_ProcessResults(
 };
 
 void PC_bsf_ProcessResults_1(
-	bool* exit, // "true" if Stopping Criterion is satisfied, and "false" otherwise
 	PT_bsf_reduceElem_T_1* reduceResult,
 	int reduceCounter, // Number of successfully produced Elrments of Reduce List
 	PT_bsf_parameter_T* parameter, // Current Approximation
-	int* jobCase
+	int* nextJob,
+	bool* exit // "true" if Stopping Criterion is satisfied, and "false" otherwise
 ) {
 	// optional filling
 };
 
 void PC_bsf_ProcessResults_2(
-	bool* exit, // "true" if Stopping Criterion is satisfied, and "false" otherwise
 	PT_bsf_reduceElem_T_2* reduceResult,
 	int reduceCounter, // Number of successfully produced Elrments of Reduce List
 	PT_bsf_parameter_T* parameter, // Current Approximation
-	int* jobCase
+	int* nextJob,
+	bool* exit // "true" if Stopping Criterion is satisfied, and "false" otherwise
 ) {
 	// optional filling
 };
 
 void PC_bsf_ProcessResults_3(
-	bool* exit, // "true" if Stopping Criterion is satisfied, and "false" otherwise
 	PT_bsf_reduceElem_T_3* reduceResult,
 	int reduceCounter, // Number of successfully produced Elrments of Reduce List
 	PT_bsf_parameter_T* parameter, // Current Approximation
-	int* newJobCase
-	) {
+	int* nextJob,
+	bool* exit // "true" if Stopping Criterion is satisfied, and "false" otherwise
+) {
 	// optional filling
 };
 
 void PC_bsf_IterOutput_3(PT_bsf_reduceElem_T_3* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
 	double elapsedTime, int jobCase) {
-	cout << "------------------ " << PP_BSF_iterCounter << " ------------------" << endl;
+	cout << "------------------ " << BSF_sv_iterCounter << " ------------------" << endl;
 	// optional filling
 
 };
 
-void PC_bsf_ParametersOutput(int numOfWorkers, PT_bsf_parameter_T parameter) {
+void PC_bsf_ParametersOutput(PT_bsf_parameter_T parameter) {
 	cout << "=================================================== Quest Modified Fejer ====================================================" << endl;
-	cout << "Number of Workers: " << numOfWorkers << endl;
+	cout << "Number of Workers: " << BSF_sv_numOfWorkers << endl;
 #ifdef PP_BSF_OMP
 #ifdef PP_BSF_NUM_THREADS
 	cout << "Number of Threads: " << PP_BSF_NUM_THREADS << endl;
@@ -240,24 +220,29 @@ void PC_bsf_ParametersOutput(int numOfWorkers, PT_bsf_parameter_T parameter) {
 	//* debug */ system("pause");/* end debug */
 };
 
+void PC_bsf_CopyParameter(PT_bsf_parameter_T parameterIn, PT_bsf_parameter_T* parameterOutP) {
+	for (int i = 0; i < PP_N; i++)
+		parameterOutP->x[i] = parameterIn.x[i];
+};
+
 void PC_bsf_IterOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
-	double elapsedTime, int newJobCase) {
-	cout << "-------------------- " << PP_BSF_iterCounter << " -------------------" << endl;
+	double elapsedTime, int nextJob) {
+	cout << "-------------------- " << BSF_sv_iterCounter << " -------------------" << endl;
 	//cout << "Reduce Result:"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(10) << reduceResult->point [j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
 	cout << "Approximation:\t\t"; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.x[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
 };
 
 void PC_bsf_IterOutput_1(PT_bsf_reduceElem_T_1* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
-	double elapsedTime, int newJobCase)
+	double elapsedTime, int nextJob)
 {
-	cout << "------------------ " << PP_BSF_iterCounter << " ------------------" << endl;
+	cout << "------------------ " << BSF_sv_iterCounter << " ------------------" << endl;
 	/* not used */
 };
 
 void PC_bsf_IterOutput_2(PT_bsf_reduceElem_T_2* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
-	double elapsedTime, int newJobCase)
+	double elapsedTime, int nextJob)
 {
-	cout << "------------------ " << PP_BSF_iterCounter << " ------------------" << endl;
+	cout << "------------------ " << BSF_sv_iterCounter << " ------------------" << endl;
 	/* not used */
 };
 
@@ -265,7 +250,7 @@ void PC_bsf_ProblemOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, 
 	double t) {// Output Function
 	cout << "=============================================" << endl;
 	cout << "Time: " << t << endl;
-	cout << "Iterations: " << PP_BSF_iterCounter << endl;
+	cout << "Iterations: " << BSF_sv_iterCounter << endl;
 	cout << "Solution: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.x[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
 };
 
@@ -284,6 +269,17 @@ void PC_bsf_ProblemOutput_3(PT_bsf_reduceElem_T_3* reduceResult, int reduceCount
 	// optional filling
 };
 
+//----------------------- Assigning Values to BSF-skeleton Variables (Do not modify!) -----------------------
+void PC_bsfAssignAddressOffset(int value) { BSF_sv_addressOffset = value; };
+void PC_bsfAssignIterCounter(int value) { BSF_sv_iterCounter = value; };
+void PC_bsfAssignJobCase(int value) { BSF_sv_jobCase = value; };
+void PC_bsfAssignMpiRank(int value) { BSF_sv_mpiRank = value; };
+void PC_bsfAssignNumberInSublist(int value) { BSF_sv_numberInSublist = value; };
+void PC_bsfAssignNumOfWorkers(int value) { BSF_sv_numOfWorkers = value; };
+void PC_bsfAssignParameter(PT_bsf_parameter_T parameter) { PC_bsf_CopyParameter(parameter, &BSF_sv_parameter); }
+void PC_bsfAssignSublistLength(int value) { BSF_sv_sublistLength = value; };
+
+//----------------------- Problem functions ---------------------------
 static double DotProduct(PT_point_T x, PT_point_T y) {
 	double sum = 0;
 	for (int j = 0; j < PP_N; j++)
@@ -302,7 +298,7 @@ static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, 
 	static double shift_approx_prev = FLT_MAX, shift_approx_next;
 
 #ifdef PP_MAX_ITER_COUNT
-	if (PP_BSF_iterCounter > PP_MAX_ITER_COUNT) {
+	if (BSF_sv_iterCounter > PP_MAX_ITER_COUNT) {
 		cout << "Acceptable maximum number of iterations is exceeded: PP_MAX_ITER_COUNT = " << PP_MAX_ITER_COUNT << endl;
 		return true;
 	};

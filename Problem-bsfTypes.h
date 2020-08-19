@@ -1,7 +1,7 @@
 /*==============================================================================
 Project: Bulk Synchronous Farm (BSF)
 Theme: BSF Skeleton
-Module: Problem-bsfTypes.h (Predefined BSF Problem Types)
+Module: Problem-bsfTypes.h (Predefined Problem Types)
 Prefix: PT_bsf
 Author: Leonid B. Sokolinsky
 This source code is a part of BSF Skeleton
