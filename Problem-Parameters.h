@@ -7,7 +7,7 @@ Author(s): Leonid B. Sokolinsky, Irina M. Sokolinskaya
 This source code has been produced with using BSF-skeleton
 ==============================================================================*/
 //=========================== Problem Parameters =========================
-#define PP_N 10			// Dimension of Space
+#define PP_N 4			// Dimension of Space
 #define PP_M (2*PP_N+2)		// Number of inequations
 #define PP_SF	200			// Scale factor
 

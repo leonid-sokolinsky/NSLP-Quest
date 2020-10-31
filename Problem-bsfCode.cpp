@@ -62,17 +62,15 @@ void PC_bsf_Init(bool* success) {
 		//system("pause");
 	};/* end debug */
 
-};
+}
 
 void PC_bsf_SetListSize(int* listSize) {
 	*listSize = PP_M;
-};
+}
 
-void PC_bsf_SetMapSubList(PT_bsf_mapElem_T* sublist, int sublistLength, int offset) {
-	//*debug*/int rank; MPI_Comm_rank(MPI_COMM_WORLD, &rank); cout << rank << ":=========>PC_bsf_SetMapSubList: sublistLength = " << sublistLength << "\toffset = " << offset << endl; cout.flush();
-	for (int i = 0; i < sublistLength; i++)
-			sublist[i].inequalityNo = offset + i;
-};
+void PC_bsf_SetMapListElem(PT_bsf_mapElem_T* elem, int i) {
+	elem->inequalityNo = i;
+}
 
 void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, int* success // 1 - reduceElem was produced successfully; 0 - otherwise
 ){
