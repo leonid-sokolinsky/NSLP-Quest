@@ -8,9 +8,11 @@ This source code has been produced with using BSF-skeleton
 #include "Problem-bsfTypes.h"
 #include "Problem-Types.h"
 //====================== Problem Functions ===========================
-static double	DotProduct(PT_point_T x, PT_point_T y);
+inline PT_float_T A(int i, int j);		// Matrix A
+inline PT_float_T b(int i);				// Column b of right parts
+static double	DotProduct(PT_vector_T x, PT_vector_T y);
 static bool		ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T* parameter);
-static double	NormSquare(PT_point_T x);
+static double	NormSquare(PT_vector_T x);
 
 //====================== Macros ================================
 #define PF_MIN(x,y) (x<y?x:y)

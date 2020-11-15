@@ -10,5 +10,5 @@ This source code has been produced with using BSF-skeleton
 #include "Problem-Include.h"		// Problem "Include" Files
 #include "Problem-Parameters.h"		// Problem Parameters 
 //=========================== Problem Types =========================
-typedef double PT_point_T[PP_N];			// Point in n-Dimensional Space 
-typedef double PT_inequality_T[PP_N + 1];		// Inequality: inequality[0]*x_1+...+inequality[n-1]*x_n <= inequality[n]
+typedef double PT_float_T;
+typedef PT_float_T PT_vector_T[PP_N];	// Vector in n-Dimensional Space 

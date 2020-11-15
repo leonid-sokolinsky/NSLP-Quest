@@ -10,15 +10,17 @@ This source code is a part of BSF Skeleton
 #include "Problem-Types.h"		// Problem Types 
 //=========================== BSF Types =========================
 struct PT_bsf_parameter_T {				// Parameter for workers (current approximation)
-	double x[PP_N];		// Current approximation
+	PT_vector_T x;		// Current approximation
 };
 
 struct PT_bsf_mapElem_T {	// Element of the map list
-	int inequalityNo;
+	PT_vector_T a;		// Inequality: a[0]*x_1+...+a[n-1]*x_n <= b
+	PT_float_T b;
+	PT_float_T normSquare; // a[0]*a[0]+...+a[n-1]*a[n-1]
 };
 
 struct PT_bsf_reduceElem_T {	// Element of reduce list	
-	double projection[PP_N];	// ProjectionVector of vector onto hyperplane
+	PT_vector_T projection;	// ProjectionVector of vector onto hyperplane
 };
 
 struct PT_bsf_reduceElem_T_1 {

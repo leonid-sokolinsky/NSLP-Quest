@@ -28,33 +28,6 @@ void PC_bsf_Init(bool* success) {
 	for (int j = 0; j < PP_N; j++) 
 		PD_apex[j] = PP_DIST_TO_APEX * PD_c[j] / sqrt(c_normSquare);
 	
-	// Generating A & b
-	for (int i = 0; i < PP_N; i++) {
-		for (int j = 0; j < PP_N; j++)
-			PD_A[i][j] = 0;
-		PD_A[i][i] = 1;
-		PD_b[i] = PP_SF;
-	};
-	for (int j = 0; j < PP_N; j++)
-		PD_A[PP_N][j] = 1;
-	PD_b[PP_N] = PP_SF * (PP_N - 1) + PP_SF / 2;
-	for (int j = 0; j < PP_N; j++)
-		PD_A[PP_N + 1][j] = -1;
-	PD_b[PP_N + 1] = -PP_SF / 2;
-	for (int i = PP_N + 2; i < PP_M; i++) {
-		for (int j = 0; j < PP_N; j++)
-			PD_A[i][j] = 0;
-		PD_A[i][i - PP_N - 2] = -1;
-		PD_b[i] = 0;
-	};
-
-	// Calculating a_i norm squares
-	for (int i = 0; i < PP_M; i++) {
-		PD_normSquare_a[i] = 0;
-		for (int j = 0; j < PP_N; j++)
-			PD_normSquare_a[i] += PD_A[i][j] * PD_A[i][j];
-	};
-	
 	/* debug *//* if (PP_BSF_mpiRank == 0) {
 		cout << "----------PC_bsf_Init-------------" << endl;
 		for (int i = 0; i < PP_M; i++)
@@ -69,20 +42,29 @@ void PC_bsf_SetListSize(int* listSize) {
 }
 
 void PC_bsf_SetMapListElem(PT_bsf_mapElem_T* elem, int i) {
-	elem->inequalityNo = i;
+	for (int j = 0; j < PP_N; j++)
+		elem->a[j] = A(i, j);
+	elem->b = b(i);
+
+	// Calculating norm square
+	for (int i = 0; i < PP_M; i++) {
+		elem->normSquare = 0;
+		for (int j = 0; j < PP_N; j++)
+			elem->normSquare += elem->a[j] * elem->a[j];
+	}
 }
 
 void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, int* success // 1 - reduceElem was produced successfully; 0 - otherwise
 ){
 	double factor;
 
-	factor = (PD_b[mapElem->inequalityNo] - DotProduct(BSF_sv_parameter.x, PD_A[mapElem->inequalityNo])) / PD_normSquare_a[mapElem->inequalityNo];
+	factor = (mapElem->b - DotProduct(BSF_sv_parameter.x, mapElem->a)) / mapElem->normSquare;
 
 	if (factor > 0)
 		*success = false;
 	else
 		for (int j = 0; j < PP_N; j++)
-			reduceElem->projection[j] = factor * PD_A[mapElem->inequalityNo][j];
+			reduceElem->projection[j] = factor * mapElem->a[j];
 
 	/* debug *//* if (PP_BSF_mpiRank == 0) {
 		cout << "Hyperplane No = " << mapElem->inequalityNo << "\tProjection: ";
@@ -209,8 +191,8 @@ void PC_bsf_ParametersOutput(PT_bsf_parameter_T parameter) {
 	cout << "------- Matrix A & Column b -------" << endl;
 	for (int i = 0; i < PP_M; i++) {
 		for (int j = 0; j < PP_N; j++)
-			cout << setw(5) << PD_A[i][j];
-		cout << "\t<=" << setw(5) << PD_b[i] << endl;
+			cout << setw(5) << A(i,j);
+		cout << "\t<=" << setw(5) << b(i) << endl;
 	};
 #endif // PP_MATRIX_OUTPUT
 	cout << "Objective Function: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(2) << PD_c[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
@@ -279,14 +261,14 @@ void PC_bsfAssignParameter(PT_bsf_parameter_T parameter) { PC_bsf_CopyParameter(
 void PC_bsfAssignSublistLength(int value) { BSF_sv_sublistLength = value; };
 
 //----------------------- Problem functions ---------------------------
-static double DotProduct(PT_point_T x, PT_point_T y) {
+static double DotProduct(PT_vector_T x, PT_vector_T y) {
 	double sum = 0;
 	for (int j = 0; j < PP_N; j++)
 		sum += x[j] * y[j];
 	return sum;
 };
 
-static double NormSquare(PT_point_T x) {
+static double NormSquare(PT_vector_T x) {
 	double sum = 0;
 	for (int j = 0; j < PP_N; j++)
 		sum += x[j] * x[j];
@@ -315,3 +297,27 @@ static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, 
 	
 	return false;
 };
+
+inline PT_float_T A(int i, int j) {
+	if (i < PP_N) {
+		if (j != i) return 0;
+		return 1;
+	}
+
+	if (i == PP_N) return 1;
+
+	if (i == PP_N + 1) return -1;
+
+	if (j + PP_N + 2 != i) return 0;
+	return -1;
+}
+
+inline PT_float_T b(int i) {
+	if (i < PP_N) return PP_SF;
+
+	if (i == PP_N) return PP_SF * (PP_N - 1) + PP_SF / 2;
+
+	if (i == PP_N + 1) return -PP_SF / 2;
+
+	return 0;
+}
