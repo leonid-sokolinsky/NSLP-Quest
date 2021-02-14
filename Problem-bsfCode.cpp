@@ -161,6 +161,14 @@ void PC_bsf_ProcessResults_3(
 	// optional filling
 };
 
+void PC_bsf_JobDispatcher(
+	PT_bsf_parameter_T* parameter, // Current Approximation
+	int* job,
+	bool* exit
+) {
+	// Optional filling. Do not delete!
+}
+
 void PC_bsf_IterOutput_3(PT_bsf_reduceElem_T_3* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
 	double elapsedTime, int jobCase) {
 	cout << "------------------ " << BSF_sv_iterCounter << " ------------------" << endl;
@@ -169,7 +177,7 @@ void PC_bsf_IterOutput_3(PT_bsf_reduceElem_T_3* reduceResult, int reduceCounter,
 };
 
 void PC_bsf_ParametersOutput(PT_bsf_parameter_T parameter) {
-	cout << "=================================================== Quest Modified Fejer ====================================================" << endl;
+	cout << "=================================================== Quest Apex ====================================================" << endl;
 	cout << "Number of Workers: " << BSF_sv_numOfWorkers << endl;
 #ifdef PP_BSF_OMP
 #ifdef PP_BSF_NUM_THREADS
@@ -254,6 +262,7 @@ void PC_bsf_ProblemOutput_3(PT_bsf_reduceElem_T_3* reduceResult, int reduceCount
 void PC_bsfAssignAddressOffset(int value) { BSF_sv_addressOffset = value; };
 void PC_bsfAssignIterCounter(int value) { BSF_sv_iterCounter = value; };
 void PC_bsfAssignJobCase(int value) { BSF_sv_jobCase = value; };
+void PC_bsfAssignMpiMaster(int value) { BSF_sv_mpiMaster = value; };
 void PC_bsfAssignMpiRank(int value) { BSF_sv_mpiRank = value; };
 void PC_bsfAssignNumberInSublist(int value) { BSF_sv_numberInSublist = value; };
 void PC_bsfAssignNumOfWorkers(int value) { BSF_sv_numOfWorkers = value; };
