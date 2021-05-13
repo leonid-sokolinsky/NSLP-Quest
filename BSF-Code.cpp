@@ -1,6 +1,6 @@
 /*==============================================================================
-Project: Bulk Synchronous Farm (BSF)
-Theme: BSF Cimmino
+Project: CoFePro
+Theme: Projection Algorithm for Solving Convex Feasibility Problems
 Module: BSF-Code.cpp (Problem Independent Code)
 Prefix: BC
 Author: Leonid B. Sokolinsky

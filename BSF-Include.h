@@ -1,6 +1,6 @@
 /*==============================================================================
-Project: Bulk Synchronous Farm (BSF)
-Theme: BSF Skeleton
+Project: CoFePro
+Theme: Projection Algorithm for Solving Convex Feasibility Problems
 Module: BSF-Include.h (Problem Independent "Include" Files)
 Author: Leonid B. Sokolinsky 
 

@@ -1,9 +1,9 @@
 /*==============================================================================
-Project: NSLP (Non-Stationary Linear Programming)
-Theme: Quest Phase
+Project: CoFePro
+Theme: Projection Algorithm for Solving Convex Feasibility Problems
 Module: Problem-bsfCode.cpp (Implementation of the Problem)
 Prefix: PI
-Author(s): Leonid B. Sokolinsky, Irina M. Sokolinskaya
+Author: Leonid B. Sokolinsky
 This source code has been produced with using BSF-skeleton
 ==============================================================================*/
 #include "Problem-Data.h"			// Problem Types 
@@ -21,7 +21,7 @@ void PC_bsf_Init(bool* success) {
 
 	// Generating Objective Function Coefficients
 	for (int j = 0; j < PP_N; j++)
-		PD_c[j] = PP_N - j;
+		PD_c[j] = (PT_float_T)PP_N - j;
 
 	// Generating Coordinates of Apex Point
 	double c_normSquare = NormSquare(PD_c);

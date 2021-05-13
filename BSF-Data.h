@@ -1,6 +1,6 @@
 /*==============================================================================
-Project: Bulk Synchronous Farm (BSF)
-Theme: BSF Skeleton
+Project: CoFePro
+Theme: Projection Algorithm for Solving Convex Feasibility Problems
 Module: BSF-Data.h (Problem Independent Variables & Data Structures)
 Prefix: BD
 Author: Leonid B. Sokolinsky !

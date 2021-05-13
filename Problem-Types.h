@@ -1,9 +1,9 @@
 /*==============================================================================
-Project: NSLP (Non-Stationary Linear Programming)
-Theme: Quest Phase
+Project: CoFePro
+Theme: Projection Algorithm for Solving Convex Feasibility Problems
 Module: Problem-Types.h (BSF Types)
 Prefix: PT
-Author(s): Leonid B. Sokolinsky, Irina M. Sokolinskaya
+Author: Leonid B. Sokolinsky
 This source code has been produced with using BSF-skeleton
 ==============================================================================*/			
 #pragma once

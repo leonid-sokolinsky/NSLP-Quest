@@ -1,6 +1,6 @@
 /*==============================================================================
-Project: Bulk Synchronous Farm (BSF)
-Theme: BSF Skeleton
+Project: CoFePro
+Theme: Projection Algorithm for Solving Convex Feasibility Problems
 Module: Problem-bsfTypes.h (Predefined Problem Types)
 Prefix: PT_bsf
 Author: Leonid B. Sokolinsky

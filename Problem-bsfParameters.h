@@ -1,9 +1,9 @@
 /*==============================================================================
-Project: NSLP (Non-Stationary Linear Programming)
-Theme: Quest Phase
+Project: CoFePro
+Theme: Projection Algorithm for Solving Convex Feasibility Problems
 Module: Problem-bsfParameters.h (BSF Skeleton Parameters)
 Prefix: PP_BSF
-Author(s): Leonid B. Sokolinsky, Irina M. Sokolinskaya
+Author: Leonid B. Sokolinsky
 This source code has been produced with using BSF-skeleton
 ==============================================================================*/
 
