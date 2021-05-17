@@ -51,10 +51,14 @@ void PC_bsf_Init(bool* success) {
 
 	for (int i = 0; i < PP_M; i++) {
 		for (int j = 0; j < PP_N; j++) {
-			if (fscanf(stream, "%f", &buf) == 0) { if (BSF_sv_mpiRank == BSF_sv_mpiMaster) cout << "Unexpected end of file" << endl; *success = false; return; };
+			if (fscanf(stream, "%f", &buf) == 0) {
+				if (BSF_sv_mpiRank == BSF_sv_mpiMaster) cout << "Unexpected end of file" << endl; *success = false; return;
+			};
 			PD_A[i][j] = buf;
 		}
-		if (fscanf(stream, "%f", &buf) == 0) { if (BSF_sv_mpiRank == BSF_sv_mpiMaster) cout << "Unexpected end of file" << endl; *success = false; return; };
+		if (fscanf(stream, "%f", &buf) == 0) {
+			if (BSF_sv_mpiRank == BSF_sv_mpiMaster) cout << "Unexpected end of file" << endl; *success = false; return;
+		};
 		PD_b[i] = buf;
 	}
 	fclose(stream);
@@ -78,8 +82,23 @@ void PC_bsf_Init(bool* success) {
 	}
 
 	for (int j = 0; j < PP_N; j++) {
-		if (fscanf(stream, "%f", &buf) == 0) { cout << "Unexpected end of file" << endl; *success = false; return; }
+		if (fscanf(stream, "%f", &buf) == 0) { if (BSF_sv_mpiRank == BSF_sv_mpiMaster) cout << "Unexpected end of file" << endl; *success = false; return; }
 		PD_exteriorPoint[j] = buf;
+	}
+
+	bool pointIn = true;
+	for (int i = 0; i < PP_M; i++) 
+		if (!PointIn(PD_exteriorPoint, PD_A[i], PD_b[i])) {
+			pointIn = false;
+			break;
+		}
+
+	if (pointIn) {
+		if (BSF_sv_mpiRank == BSF_sv_mpiMaster)
+			cout << "The point in the file '" 
+			<< PD_exteriorPointFile << "' is the interior point of the inequality system from the file '"
+			<< PD_inequalitiesFile << "'.\n";
+		*success = false; return;
 	}
 
 	fclose(stream);
@@ -301,7 +320,7 @@ void PC_bsfAssignParameter(PT_bsf_parameter_T parameter) { PC_bsf_CopyParameter(
 void PC_bsfAssignSublistLength(int value) { BSF_sv_sublistLength = value; };
 
 //----------------------- Problem functions ---------------------------
-static double Vector_DotProductSquare(PT_vector_T x, PT_vector_T y) {
+static double Vector_DotProduct(PT_vector_T x, PT_vector_T y) {
 	double sum = 0;
 	for (int j = 0; j < PP_N; j++)
 		sum += x[j] * y[j];
@@ -324,7 +343,7 @@ Vector_ProjectOnHalfspace(PT_vector_T point, PT_vector_T a, PT_float_T b, PT_vec
 	if (aNormSquare < PP_EPS_ZERO)
 		return false;
 
-	factor = (b - Vector_DotProductSquare(point, a)) / aNormSquare;
+	factor = (b - Vector_DotProduct(point, a)) / aNormSquare;
 
 	if (factor > PP_EPS_ZERO)
 		return false;
@@ -372,4 +391,13 @@ static bool SaveSolution(PT_vector_T x, string solutionFile) {
 
 	fclose(stream);
 	return true;
+}
+
+inline bool PointIn(PT_vector_T x, PT_vector_T a, PT_float_T b) { // If the point belonges to the Halfspace <a,x> <= b
+	PT_float_T dotProduct_a_x = Vector_DotProduct(a, x);
+
+	if (dotProduct_a_x < b + PP_EPS_ZERO)
+		return true;
+	else
+		return false;
 }

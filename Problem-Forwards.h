@@ -9,8 +9,9 @@ This source code has been produced with using BSF-skeleton
 #include "Problem-Types.h"
 //====================== Problem Functions ===========================
 static bool		ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T* parameter);
+bool			PointIn(PT_vector_T x, PT_vector_T a, PT_float_T b); // If the point belonges to the Halfspace <a,x> <= b?
 bool			SaveSolution(PT_vector_T x, string solutionFile);
-static double	Vector_DotProductSquare(PT_vector_T x, PT_vector_T y);
+static double	Vector_DotProduct(PT_vector_T x, PT_vector_T y);
 static double	Vector_NormSquare(PT_vector_T x);
 bool			Vector_ProjectOnHalfspace(PT_vector_T point, PT_vector_T a, PT_float_T b, PT_vector_T projection);
 
