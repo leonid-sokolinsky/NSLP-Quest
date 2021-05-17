@@ -14,26 +14,79 @@ using namespace std;
 
 void PC_bsf_SetInitParameter(PT_bsf_parameter_T* parameter) {
 	for (int j = 0; j < PP_N; j++) // Generating initial approximation
-		parameter->x[j] = PD_apex[j];
+		parameter->x[j] = PD_exteriorPoint[j];
 };
 
 void PC_bsf_Init(bool* success) {
 
-	// Generating Objective Function Coefficients
-	for (int j = 0; j < PP_N; j++)
-		PD_c[j] = (PT_float_T)PP_N - j;
+	// ------------- Load inequality system -------------------
+	PD_inequalitiesFile = PP_PATH;
+	PD_inequalitiesFile += PP_LPP_FILE;
+	const char* inequalitiesFile = PD_inequalitiesFile.c_str();
 
-	// Generating Coordinates of Apex Point
-	double c_normSquare = NormSquare(PD_c);
-	for (int j = 0; j < PP_N; j++) 
-		PD_apex[j] = PP_DIST_TO_APEX * PD_c[j] / sqrt(c_normSquare);
-	
-	/* debug *//* if (PP_BSF_mpiRank == 0) {
-		cout << "----------PC_bsf_Init-------------" << endl;
-		for (int i = 0; i < PP_M; i++)
-			cout << "InequalityNo = " << i << "\tNorm Square = " << PD_normSquare_a[i] << endl;
-		//system("pause");
-	};/* end debug */
+	FILE* stream;
+	float buf;
+	int m, n;
+	stream = fopen(inequalitiesFile, "r");
+
+	if (stream == NULL) {
+		if (BSF_sv_mpiRank == BSF_sv_mpiMaster)
+			cout << "Failure of opening file '" << inequalitiesFile << "'.\n";
+		*success = false; return;
+	}
+
+	if (fscanf(stream, "%d%d", &m, &n) == 0) {
+		if (BSF_sv_mpiRank == BSF_sv_mpiMaster)
+			cout << "Unexpected end of file" << endl;
+		*success = false;
+		return;
+	}
+
+	if (n != PP_N || m != PP_M) {
+		if (BSF_sv_mpiRank == BSF_sv_mpiMaster)
+			cout << "Error in input data '" << inequalitiesFile << "': PP_N != n and/or PP_M != m (PP_N = "
+			<< PP_N << ", n = " << n << "; PP_M = " << PP_M << ", m = " << m << ").\n";
+		*success = false; return;
+	}
+
+	for (int i = 0; i < PP_M; i++) {
+		for (int j = 0; j < PP_N; j++) {
+			if (fscanf(stream, "%f", &buf) == 0) { if (BSF_sv_mpiRank == BSF_sv_mpiMaster) cout << "Unexpected end of file" << endl; *success = false; return; };
+			PD_A[i][j] = buf;
+		}
+		if (fscanf(stream, "%f", &buf) == 0) { if (BSF_sv_mpiRank == BSF_sv_mpiMaster) cout << "Unexpected end of file" << endl; *success = false; return; };
+		PD_b[i] = buf;
+	}
+	fclose(stream);
+
+	// --------------- Load exterior point ---------------
+	PD_exteriorPointFile = PP_PATH;
+	PD_exteriorPointFile += PP_EXTERIOR_POINT_FILE;
+	const char* exteriorPointFile = PD_exteriorPointFile.c_str();
+	stream = fopen(exteriorPointFile, "r");
+	if (stream == NULL) {
+		if (BSF_sv_mpiRank == BSF_sv_mpiMaster)
+			cout << "Failure of opening file '" << exteriorPointFile << "'.\n";
+		*success = false; return;
+	}
+
+	if (fscanf(stream, "%d", &n) == 0) { cout << "Unexpected end of file" << endl; *success = false; return; }
+	if (n != PP_N) {
+		if (BSF_sv_mpiRank == BSF_sv_mpiMaster)
+			cout << "Error in input data '" << exteriorPointFile << "': PP_N != n (PP_N = " << PP_N << ", n = " << n << ").\n";
+		*success = false; return;
+	}
+
+	for (int j = 0; j < PP_N; j++) {
+		if (fscanf(stream, "%f", &buf) == 0) { cout << "Unexpected end of file" << endl; *success = false; return; }
+		PD_exteriorPoint[j] = buf;
+	}
+
+	fclose(stream);
+
+	*success = true;
+
+	cout << "The calculations have started, please wait..." << endl;
 
 }
 
@@ -42,42 +95,16 @@ void PC_bsf_SetListSize(int* listSize) {
 }
 
 void PC_bsf_SetMapListElem(PT_bsf_mapElem_T* elem, int i) {
-	for (int j = 0; j < PP_N; j++)
-		elem->a[j] = A(i, j);
-	elem->b = b(i);
+	elem->a = PD_A[i];
+	elem->b = &(PD_b[i]);
 
 	// Calculating norm square
-	for (int i = 0; i < PP_M; i++) {
-		elem->normSquare = 0;
-		for (int j = 0; j < PP_N; j++)
-			elem->normSquare += elem->a[j] * elem->a[j];
-	}
+	elem->normSquare = Vector_NormSquare(PD_A[i]);
 }
 
 void PC_bsf_MapF(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T* reduceElem, int* success // 1 - reduceElem was produced successfully; 0 - otherwise
 ){
-	double factor;
-
-	factor = (mapElem->b - DotProduct(BSF_sv_parameter.x, mapElem->a)) / mapElem->normSquare;
-
-	if (factor > 0)
-		*success = false;
-	else
-		for (int j = 0; j < PP_N; j++)
-			reduceElem->projection[j] = factor * mapElem->a[j];
-
-	/* debug *//* if (PP_BSF_mpiRank == 0) {
-		cout << "Hyperplane No = " << mapElem->inequalityNo << "\tProjection: ";
-		if (factor >= 0)
-			cout << "\tsuccess = false" << endl;
-		else {
-			cout << "\tProjection Vector: ";
-			for (int j = 0; j < PP_N; j++)
-				cout << setw(12) << reduceElem->projection[j];
-		};
-		cout << endl;
-		system("pause");
-	};/* end debug */
+	*success = Vector_ProjectOnHalfspace(BSF_sv_parameter.x, mapElem->a, *mapElem->b, reduceElem->projection);
 };
 
 void PC_bsf_MapF_1(PT_bsf_mapElem_T* mapElem, PT_bsf_reduceElem_T_1* reduceElem,
@@ -177,7 +204,7 @@ void PC_bsf_IterOutput_3(PT_bsf_reduceElem_T_3* reduceResult, int reduceCounter,
 };
 
 void PC_bsf_ParametersOutput(PT_bsf_parameter_T parameter) {
-	cout << "=================================================== Quest Apex ====================================================" << endl;
+	cout << "=================================================== Quest ====================================================" << endl;
 	cout << "Number of Workers: " << BSF_sv_numOfWorkers << endl;
 #ifdef PP_BSF_OMP
 #ifdef PP_BSF_NUM_THREADS
@@ -193,18 +220,17 @@ void PC_bsf_ParametersOutput(PT_bsf_parameter_T parameter) {
 	cout << "Scale Factor: SF = " << PP_SF << endl;
 	cout << "Relaxation Factor: LAMBDA = " << PP_LAMBDA << endl;
 	cout << "Eps_Relax = " << PP_EPS_RELAX << endl;
-	cout << "Distance to Apex = " << PP_DIST_TO_APEX << endl;
 
 #ifdef PP_MATRIX_OUTPUT
 	cout << "------- Matrix A & Column b -------" << endl;
 	for (int i = 0; i < PP_M; i++) {
+		cout << i << ")";
 		for (int j = 0; j < PP_N; j++)
-			cout << setw(5) << A(i,j);
-		cout << "\t<=" << setw(5) << b(i) << endl;
-	};
+			cout << setw(PP_SETW) << PD_A[i][j];
+		cout << "\t<=" << setw(PP_SETW) << PD_b[i] << endl;
+	}
 #endif // PP_MATRIX_OUTPUT
-	cout << "Objective Function: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(2) << PD_c[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
-	cout << "Apex Point: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << PD_apex[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
+	cout << "Exterior Point: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << PD_exteriorPoint[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
 	cout << "-------------------------------------------" << endl;
 	//* debug */ system("pause");/* end debug */
 };
@@ -238,9 +264,14 @@ void PC_bsf_IterOutput_2(PT_bsf_reduceElem_T_2* reduceResult, int reduceCounter,
 void PC_bsf_ProblemOutput(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
 	double t) {// Output Function
 	cout << "=============================================" << endl;
-	cout << "Time: " << t << endl;
+	cout << "Elapsed time: " << t << endl;
 	cout << "Iterations: " << BSF_sv_iterCounter << endl;
-	cout << "Solution: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.x[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;/**/
+	cout << "Interior point: "; for (int j = 0; j < PF_MIN(PP_OUTPUT_LIMIT, PP_N); j++) cout << setw(12) << parameter.x[j]; cout << (PP_OUTPUT_LIMIT < PP_N ? "..." : "") << endl;
+
+	PD_interiorPointFile = PP_PATH;
+	PD_interiorPointFile += PP_INTERIOR_POINT_FILE;
+	if (SaveSolution(parameter.x, PD_interiorPointFile))
+		cout << "Solution is saved into the file '" << PD_interiorPointFile << "'." << endl;
 };
 
 void PC_bsf_ProblemOutput_1(PT_bsf_reduceElem_T_1* reduceResult, int reduceCounter, PT_bsf_parameter_T parameter,
@@ -270,19 +301,40 @@ void PC_bsfAssignParameter(PT_bsf_parameter_T parameter) { PC_bsf_CopyParameter(
 void PC_bsfAssignSublistLength(int value) { BSF_sv_sublistLength = value; };
 
 //----------------------- Problem functions ---------------------------
-static double DotProduct(PT_vector_T x, PT_vector_T y) {
+static double Vector_DotProductSquare(PT_vector_T x, PT_vector_T y) {
 	double sum = 0;
 	for (int j = 0; j < PP_N; j++)
 		sum += x[j] * y[j];
 	return sum;
 };
 
-static double NormSquare(PT_vector_T x) {
+static double Vector_NormSquare(PT_vector_T x) {
 	double sum = 0;
 	for (int j = 0; j < PP_N; j++)
 		sum += x[j] * x[j];
 	return sum;
 };
+
+// Point projection onto Half-space <a,x> <= b
+inline bool // true if the point does not belong to the half-space and false otherwise 
+Vector_ProjectOnHalfspace(PT_vector_T point, PT_vector_T a, PT_float_T b, PT_vector_T projection) {
+	double factor;
+	double aNormSquare = Vector_NormSquare(a);
+
+	if (aNormSquare < PP_EPS_ZERO)
+		return false;
+
+	factor = (b - Vector_DotProductSquare(point, a)) / aNormSquare;
+
+	if (factor > PP_EPS_ZERO)
+		return false;
+
+	for (int j = 0; j < PP_N; j++) {
+		projection[j] = factor * a[j];
+	}
+
+	return true;
+}
 
 static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, PT_bsf_parameter_T* parameter) {
 	static double shift_approx_prev = FLT_MAX, shift_approx_next;
@@ -307,26 +359,17 @@ static bool ExitCondition(PT_bsf_reduceElem_T* reduceResult, int reduceCounter, 
 	return false;
 };
 
-inline PT_float_T A(int i, int j) {
-	if (i < PP_N) {
-		if (j != i) return 0;
-		return 1;
+static bool SaveSolution(PT_vector_T x, string solutionFile) {
+	FILE* stream;
+
+	const char* file = solutionFile.c_str();
+	stream = fopen(file, "w");
+	if (stream == NULL) {
+		if (BSF_sv_mpiRank == BSF_sv_mpiMaster)
+			cout << "Failure of opening file '" << solutionFile << "'.\n";
+		return false;
 	}
 
-	if (i == PP_N) return 1;
-
-	if (i == PP_N + 1) return -1;
-
-	if (j + PP_N + 2 != i) return 0;
-	return -1;
-}
-
-inline PT_float_T b(int i) {
-	if (i < PP_N) return PP_SF;
-
-	if (i == PP_N) return PP_SF * (PP_N - 1) + PP_SF / 2;
-
-	if (i == PP_N + 1) return -PP_SF / 2;
-
-	return 0;
+	fclose(stream);
+	return true;
 }

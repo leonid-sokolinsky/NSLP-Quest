@@ -14,9 +14,9 @@ struct PT_bsf_parameter_T {				// Parameter for workers (current approximation)
 };
 
 struct PT_bsf_mapElem_T {	// Element of the map list
-	PT_vector_T a;		// Inequality: a[0]*x_1+...+a[n-1]*x_n <= b
-	PT_float_T b;
-	PT_float_T normSquare; // a[0]*a[0]+...+a[n-1]*a[n-1]
+	PT_float_T* a;			// Pointer to row: (a_0,...,a_{n-1})
+	PT_float_T* b;			// Pointer to constant term b: a_0x_0+...+a_{n-1}x_{n-1} \leq b
+	PT_float_T normSquare;	// a_0^2+...+a_{n-1}^2
 };
 
 struct PT_bsf_reduceElem_T {	// Element of reduce list	
